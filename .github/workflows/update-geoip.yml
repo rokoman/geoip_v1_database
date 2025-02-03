@@ -2,10 +2,14 @@ name: Update GeoIP Database
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # ทุกวันอาทิตย์
-  workflow_dispatch:      # รันด้วยตัวเอง
+    - cron: '30 */1 * * *'
+  workflow_dispatch:
   push:
-    branches: [ main ]    # รันเมื่อมีการ push ไปยัง main branch
+    branches: [ main ]
+
+permissions:
+  contents: write
+  issues: write
 
 jobs:
   update-geoip:
@@ -14,49 +18,34 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Create GeoIP directory
-        run: mkdir -p GeoIP
-
-      - name: Download and verify GeoIP database
+      - name: Download GeoIP
         run: |
-          # Download file
-          if curl -s https://mailfud.org/geoip-legacy/GeoIP.dat.gz -o GeoIP/GeoIP.dat.gz; then
-            # Verify if it's a valid gzip file
-            if file GeoIP/GeoIP.dat.gz | grep -q "gzip compressed data"; then
-              #gunzip -f GeoIP/GeoIP.dat.gz
-              echo "Download successful"
-            else
-              echo "Downloaded file is not a valid gzip file"
-              exit 1
-            fi
+          mkdir -p GeoIP
+          echo "Downloading GeoIP database..."
+          curl -s https://mailfud.org/geoip-legacy/GeoIP.dat.gz -o GeoIP/GeoIP.dat.gz
+
+          if [ -f "GeoIP/GeoIP.dat.gz" ]; then
+            echo "Download GeoIP database..."
           else
             echo "Download failed"
             exit 1
           fi
 
-      - name: Check if there are changes
-        id: verify_diff
-        run: |
-          git diff --quiet GeoIP/ || echo "changed=true" >> $GITHUB_OUTPUT
-
-      - name: Commit and push if changed
-        if: steps.verify_diff.outputs.changed == 'true'
+      - name: Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add GeoIP/
-          git commit -m "Update GeoIP database [automated]"
-          git push
 
-      - name: Create issue on failure
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'GeoIP Database Update Failed',
-              body: 'The automated GeoIP database update workflow failed. Please check the workflow logs.'
-            })
+          echo "Checking for changes..."
+          if git status | grep -q "GeoIP/"; then
+            echo "Changes detected, committing..."
+            git add GeoIP/
+            git commit -m "Update GeoIP database [automated]"
+            git push
+            echo "Changes pushed successfully"
+          else
+            echo "No changes to commit"
+          fi

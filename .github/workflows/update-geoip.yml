@@ -28,9 +28,9 @@ jobs:
           curl -s https://mailfud.org/geoip-legacy/GeoIP.dat.gz -o GeoIP/GeoIP.dat.gz
 
           if [ -f "GeoIP/GeoIP.dat.gz" ]; then
-            echo "Download GeoIP database..."
+            echo "Download complete..."
           else
-            echo "Download failed"
+            echo "gDownload failed"
             exit 1
           fi
 

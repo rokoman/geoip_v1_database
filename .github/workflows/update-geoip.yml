@@ -25,7 +25,8 @@ jobs:
         run: |
           mkdir -p GeoIP
           echo "Downloading GeoIP database..."
-          curl -s https://mailfud.org/geoip-legacy/GeoIP.dat.gz -o GeoIP/GeoIP.dat.gz
+          #curl -s https://mailfud.org/geoip-legacy/GeoIP.dat.gz -o GeoIP/GeoIP.dat.gz
+          wget -q -O GeoIP/GeoIP.dat.gz https://mailfud.org/geoip-legacy/GeoIP.dat.gz
 
           if [ -f "GeoIP/GeoIP.dat.gz" ]; then
             echo "Download complete..."
